@@ -1,14 +1,3 @@
-# To do list:
-#            1- Adding exploration (histgram for number of claims & expo) and amount
-#            2- Adding all continues as smooth function and have their plots like article
-#            3- Adding all interactions (of continues factors) separately above the main effects
-#            4- For severity use average (amount/nclaim) only nclaims>0 lognormal remove claims above 81,000
-#            5- Using severity * number of claims
-#            6- Adding exaustive search and based on AIC selecting the best subset
-#            7- How is the central of lang and lot is calculated? 
-#            8- Group municipalities with similar spatial riskiness together 
-
-
 
 library(tidyverse)
 library(DataExplorer)
@@ -18,6 +7,9 @@ library(sf)
 library(sp)
 library(tmap)
 library(gbm)
+library(caret)
+library(ggplot2)
+library(ggpubr)
 KULbg = "#116E8A" 
 
 data= read.table("https://raw.githubusercontent.com/sinafakhar/Insurance/master/data.csv",sep=",",header=T)
@@ -25,7 +17,7 @@ inpost=read.table("https://raw.githubusercontent.com/sinafakhar/Insurance/master
 
 ######################## PREPROCESSING DATASETS #######################################
 
-#DataExplorer::create_report(data)                         #Exploring all the data at a glance
+#DataExplorer::create_report(data)                        #Exploring all the data at a glance
 names(data)=tolower(colnames(data))                       #Making all the column names lower
 names(inspost)=tolower(colnames(inspost))                 #Making all the column names lower
 
@@ -41,66 +33,75 @@ mean(test$chargtot)
 mean(train$chargtot)
 sum(test$nbrtotc)*4
 sum(train$nbrtotc)
+
+population= data2[sample(1:nrow(data2), 1000, replace=FALSE),]
+sample1= sample.int(n = nrow(data2), size = floor(.8*nrow(population)), replace = F)
+
+minitrain <- data2[sample1, ]
+minitest  <- data2[-sample1, ]
+
+
 ####################### EXPLORATION ##################################################
+#Old cars have more number of claims
+theme_set(theme_pubr())
 
+ggplot(train, aes(x = sportc, y = nbrtotc))+
+  geom_bar(
+    aes(fill = agecar), stat = "identity", color = "white",
+    position = position_dodge(0.9)
+  )+
+  facet_wrap(~sexp) + 
+  fill_palette("jco")
 
-
-###################### PLOTS FOR FREQUENCY OF CLAIMS WITH EXPOSURE ##############
 
                               
  ggplot(train, aes(nbrtotc)) + theme_bw() +       #Frequency of total claims
    geom_bar(col = KULbg, fill = KULbg) +
-   labs(y = "Abs frequency") +
+   labs(y = "frequency") +
   ggtitle("number of claims")
 
 
  ggplot(train, aes(nbrtotc)) + theme_bw() +       #Frequency of total claims weighted with exposure
    geom_bar(aes(weight = duree), col = KULbg,
            fill = KULbg) +
-   labs(y = "Abs freq (in exposure)") +
-   ggtitle("number of claims")
+   labs(y = "frequency (in exposure)") +
+   ggtitle("number of weighted claims")
  
 
- ggplot(train, aes(chargtot)) + theme_bw() +       #Severity 
+ ggplot(train, aes(duree)) + theme_bw() +       #Exposure  
    geom_histogram(col = KULbg, fill = KULbg) +
    labs(y = "Abs frequency") +
-   ggtitle("number of claims")+scale_y_log10()
+   ggtitle("Exposure")
 
- ggplot(train, aes(x=ageph, y=chargtot)) +    #One outlier 
+ ggplot(train, aes(x=ageph, y=chargtot)) +        #Big amount of severiries are mainly for youngs 
    geom_point(alpha=.4, size=4, color=KULbg)
 
  ggplot(train, aes(coverp)) + theme_bw() +       #Frequency of coverp
    geom_bar(col = KULbg, fill = KULbg) +
-   labs(y = "Abs frequency") +
-   ggtitle("number of claims")
+   labs(y = "Coverage") +
+   ggtitle("Type of coverage")
  
   ######################## GLM MODEL ############################################
-
+########## Frequency###################
 glm.model1=glm(nbrtotc~ offset(log(duree))+ageph+codposs+agecar+sexp+fuelc+split+
                  fleetc+usec+sportc+coverp+powerc+ageph:sexp,train, 
                family = poisson(link="log"))   #Try GLM family model
 summary(glm.model1)
 
-
-
-
-model1=stepAIC(glm.model1,k=2, direction="both", scope=list(upper=~., lower=~1))      #Stepwise for both AIC and BIC to see which model is best 
+model1=stepAIC(glm.model1,k=2, direction="both", scope=list(upper=~., lower=~1))      
 summary(model1)
-model1$anova
 
-data3=data1%>% filter(nbrtotc>0)      #Keeping just positive number of claims (removing 0)
+########## Severity#################
+data3=train%>% filter(nbrtotc>0)      #Keeping just positive number of claims (removing 0)
 glm.model2=glm(chargtot~offset(log(duree))+ageph+codposs+agecar+
                  sexp+fuelc+split+fleetc+usec+sportc+coverp+
-                 powerc+ageph:sexp, data3, family = Gamma (link="log"))   #Try GLM family model
+                 powerc+ageph:sexp, data3, family = Gamma (link="log"))  
 summary(glm.model2)
 
-par(mfrow=c(2,2))
-plot(glm.model)
 
-model1=stepAIC(glm.model2,k=2, direction="both", scope=list(upper=~., lower=~1))      #Stepwise for both AIC and BIC to see which model is best 
+model1=stepAIC(glm.model2,k=2, direction="both", scope=list(upper=~., lower=~1))      
 summary(model1)
-par(mfrow=c(2,2))
-plot(model1)
+
 
 
 ####################### GAM MODEL ###########################################
@@ -136,9 +137,6 @@ tm_shape(simple_shp) +
 #gam.model=gam(nbrtotc~s(ageph, sp=1.2,k=5, bs="cr"),family=poisson, data1)       #Manually k,bs
 #gam.model1=gam(nbrtotc~s(ageph), method="REML",family=poisson, data1)    #Using REML
 #print(gam.model1)
-
-
-
 
 
 model.gam= gam(nbrtotc~s(ageph)+s(long,lat,bs="tp")+agecar+sexp+fuelc+
@@ -210,12 +208,104 @@ ggplot(belgium_shape_sf) +
 
 
 ############################ Gradient Boosting#################################
-# Training control definition
-set.seed(123) #For reproducibility
-train.control <- trainControl(method = "repeatedcv", savePredictions = "final",
-                              number = 5, repeats = 3)
-train1=train[,-c()]
-model6_max <- train(nbrtotc ~ . , data = train,
-                    method = "gbm", trControl = train.control, metric = "MAE")
+########### Runing Parallel Processing ########
+library(doParallel)
+cl <- makePSOCKcluster(5)
+registerDoParallel(cl)
 
+##########  Cross Validation ##################
+set.seed(123) 
+train.control <- trainControl(method = "repeatedcv", savePredictions = "final",
+                              number = 10, repeats = 3)
+minitrain1=minitrain[,-c(3,4,6,7)]
+
+########## Training Frequency Models#####################
+model1 <- train(nbrtotc ~ . , data = minitrain1,
+                    method = "rf", trControl = train.control, metric = "MAE")
+model2 <- train(nbrtotc ~ . , data = minitrain1,
+                method = "gbm", trControl = train.control, metric = "MAE")
+model3 <- train(nbrtotc ~ . , data = minitrain1,
+                method = "glm", trControl = train.control,metric = "MAE")
+
+
+stopCluster(cl)    #Stoping the Parallel Processing 
+
+###### Ploting performance of models###############
+trellis.par.set(caretTheme())
+plot(model1)
+plot(model2)
+
+##### Ploting Varible Importance##################
+plot(varimportance <- varImp(model1, scale = FALSE))
+plot(varimportance <- varImp(model2, scale = FALSE))
+plot(varimportance <- varImp(model3, scale = FALSE))
+
+##### MAE ########################################
+print(min(model1$results$MAE))
+print(min(model2$results$MAE))
+print(min(model3$results$MAE))
+
+#### Predictions #################################
+predict1= predict(model1, minitest)
+predict2= predict(model2, minitest)
+predict3= predict(model3, minitest)
+
+
+mean(abs(minitest$nbrtotc-predict1))
+mean(abs(minitest$nbrtotc-predict2))
+mean(abs(minitest$nbrtotc-predict3))
+
+
+####Training Severity models#####################
+minitrain2=minitrain[,-c(3,4,6,5)]
+
+model11 <- train( chargtot~ . , data = minitrain2,
+                method = "rf", trControl = train.control, metric = "MAE")
+model22 <- train(chargtot ~ . , data = minitrain2,
+                method = "gbm", trControl = train.control, metric = "MAE")
+model33 <- train(chargtot ~ . , data = minitrain2,
+                method = "glm", trControl = train.control,metric = "MAE")
+
+stopCluster(cl)    #Stoping the Parallel Processing 
+# registerDoSEQ()
+# unregister <- function() {
+#   env <- foreach:::.foreachGlobals
+#   rm(list=ls(name=env), pos=env)
+# }
+###### Ploting performance of models###############
+trellis.par.set(caretTheme())
+plot(model11)
+plot(model22)
+
+##### Ploting Varible Importance##################
+plot(varimportance <- varImp(model11, scale = FALSE))
+plot(varimportance <- varImp(model22, scale = FALSE))
+plot(varimportance <- varImp(model33, scale = FALSE))
+
+##### MAE ########################################
+print(min(model11$results$MAE))
+print(min(model22$results$MAE))
+print(min(model33$results$MAE))
+
+#### Predictions #################################
+predict11= predict(model11, minitest)
+predict22= predict(model22, minitest)
+predict33= predict(model33, minitest)
+
+
+mean(abs(minitest$nbrtotc-predict11))
+mean(abs(minitest$nbrtotc-predict22))
+mean(abs(minitest$nbrtotc-predict33))
+#### Collected premuim Vs Observed losses########
+losses=sum(minitrain$chargtot)
+
+predict111=predict(model11, minitrain)
+predict222=predict(model22, minitrain)
+predict333=predict(model33, minitrain)
+
+sum(predict111)/losses
+sum(predict222)/losses
+sum(predict333)/losses     
+
+###### rpart#####################################
 
