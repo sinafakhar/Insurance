@@ -24,16 +24,19 @@ names(inspost)=tolower(colnames(inspost))                 #Making all the column
 data1=data %>% inner_join(inspost, by = "codposs")        #Joining lang and lat to data1
 data1=data1[,-c(17,18)]                                   #Removing commune and ins from data1
 
-which(data1$chargtot>1000000)
-data2=data1[-11749,]
-sample <- sample.int(n = nrow(data2), size = floor(.8*nrow(data1)), replace = F)
+which(data1$chargtot>1000000)                             #We have one very big severity which 
+                                                           
+data2=data1[-11749,]                                      #Removing the outlier
+sample <- sample.int(n = nrow(data2), size = floor(.8*nrow(data1)), replace = F)   #Creating train an test sets
 train <- data2[sample, ]
 test  <- data2[-sample, ]
-mean(test$chargtot)
+mean(test$chargtot)                                       #Making sure the train and test set are representative 
 mean(train$chargtot)
 sum(test$nbrtotc)*4
 sum(train$nbrtotc)
 
+#Since the original dataset is big for some models (Like ones in CARET) we used this minitrain and test 
+#to test and then replace with original one
 population= data2[sample(1:nrow(data2), 1000, replace=FALSE),]
 sample1= sample.int(n = nrow(data2), size = floor(.8*nrow(population)), replace = F)
 
@@ -172,6 +175,8 @@ geomodel= gam(nbrtotc~ geo+coverp+fuelc+s(ageph), data=mtpl_geo, family = poisso
 summary(geomodel)
 
 ##### GLM with grouped spatial ##############
+#This part is not ready because the created vecture needs 9G RAM 
+#and we need to fix this issue first
 geo=mtpl_geo[,c("geo","codposs")]
 train1=train[,-c(17,18,4,6)]
 train2=left_join(train1, geo, by="codposs")
@@ -188,8 +193,8 @@ ggplot(belgium_shape_sf) +
   theme_bw()
 
 
-############################ Gradient Boosting#################################
-########### Runing Parallel Processing ########
+#######################Gradient Boosting, Random Forest and GLM with CARET#################
+########### Running Parallel Processing ########
 library(doParallel)
 cl <- makePSOCKcluster(5)
 registerDoParallel(cl)
