@@ -323,32 +323,19 @@ plot(tree_opt)
 
 
 
-freq_gam_spatial <- rpart(nbrtotc ~ long+ lat, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 10))
+tmodel_spatial <- rpart(nbrtotc ~ long+ lat, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 10))
 
 post_dt = st_centroid(belgium_shape_sf)
 post_dt$long= do.call(rbind, post_dt$geometry)[,1]
 post_dt$lat= do.call(rbind, post_dt$geometry)[,2]
 
-
-pred=predict(freq_gam_spatial, newdata = post_dt)
+pred=predict(tmodel_spatial, newdata = post_dt)
 dt_pred=data.frame(pc=post_dt$POSTCODE,long=post_dt$long, lat=post_dt$lat, pred)
 names(dt_pred)[4] = "fit_spatial"
 
-
-
 belgium_shape_sf= left_join(belgium_shape_sf, dt_pred, by=c("POSTCODE"="pc"))
-num_bins=5
-library(classInt)
-classint_fisher=classIntervals(dt_pred$fit_spatial,num_bins,style="fisher")
-classint_fisher$brks
-min(dt_pred$fit_spatial)
-max(dt_pred$fit_spatial)
-ggtitle("claim frequency data") +
-belgium_shape_sf$class_fisher=cut(belgium_shape_sf$fit_spatial,breaks = classint_fisher$brks,
-                                  right = FALSE, include.lowest = TRUE,dig.lab = 2)
 
 ggplot(belgium_shape_sf) +
   geom_sf(aes(fill = fit_spatial), colour = NA) +
   scale_fill_gradient(low = "#99CCFF",
-                      high = "#003366") +
-  theme_bw()
+                      high = "#003366") +theme_bw()
