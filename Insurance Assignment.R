@@ -112,7 +112,7 @@ summary(model1)
 set.seed(123)
 data.sampled= data1[sample(1:nrow(data1),100, replace=FALSE),]
 
-belgium_shape_sf <- st_read(file.choose(), quiet = TRUE)
+#belgium_shape_sf <- st_read(file.choose(), quiet = TRUE)
 belgium_shape_sf <- st_transform(belgium_shape_sf, CRS("+proj=longlat +datum=WGS84"))
 belgium_shape_sf= st_simplify(belgium_shape_sf,dTolerance = 0.00001)
 class(belgium_shape_sf)
@@ -296,7 +296,7 @@ sum(predict333)/losses
 ###### rpart for regression tree #####################################
 library(rpart)
 
-tmodel <- rpart(nbrtotc ~ sexp + ageph + coverp + sportc+powerc+fuelc+agecar+split+fleetc+usec+long+lat, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 10))
+tmodel <- rpart(nbrtotc ~ sexp + ageph + coverp + sportc+powerc+fuelc+agecar+split+fleetc+usec+long+lat, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 5))
 summary(tmodel)
 tmodel$variable.importance
 library(partykit)
