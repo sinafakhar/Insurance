@@ -42,9 +42,8 @@ minitest  <- data2[-sample1, ]
 
 
 ####################### EXPLORATION ##################################################
-#Old cars have more number of claims
-theme_set(theme_pubr())
-
+#We need to some more insightful visualtizations like below
+theme_set(theme_pubr())    #Old cars have more number of claims
 ggplot(train, aes(x = sportc, y = nbrtotc))+
   geom_bar(
     aes(fill = agecar), stat = "identity", color = "white",
@@ -68,7 +67,7 @@ ggplot(train, aes(x = sportc, y = nbrtotc))+
    ggtitle("number of weighted claims")
  
 
- ggplot(train, aes(duree)) + theme_bw() +       #Exposure  
+ ggplot(train, aes(duree)) + theme_bw() +         #Exposure  
    geom_histogram(col = KULbg, fill = KULbg) +
    labs(y = "Abs frequency") +
    ggtitle("Exposure")
@@ -76,13 +75,14 @@ ggplot(train, aes(x = sportc, y = nbrtotc))+
  ggplot(train, aes(x=ageph, y=chargtot)) +        #Big amount of severiries are mainly for youngs 
    geom_point(alpha=.4, size=4, color=KULbg)
 
- ggplot(train, aes(coverp)) + theme_bw() +       #Frequency of coverp
+ ggplot(train, aes(coverp)) + theme_bw() +        #Frequency of coverp
    geom_bar(col = KULbg, fill = KULbg) +
    labs(y = "Coverage") +
    ggtitle("Type of coverage")
  
   ######################## GLM MODEL ############################################
 ########## Frequency###################
+#We yet didn't add geo info to this model we need to do the binning and then add
 glm.model1=glm(nbrtotc~ offset(log(duree))+ageph+codposs+agecar+sexp+fuelc+split+
                  fleetc+usec+sportc+coverp+powerc+ageph:sexp,train, 
                family = poisson(link="log"))   #Try GLM family model
@@ -128,16 +128,6 @@ tm_shape(simple_shp) +
   tm_borders(col = KULbg, lwd = 0.5) +
   tm_layout(main.title = 'Welcome to Belgium!',
             legend.outside = TRUE, frame = FALSE)
-
-#post_expo= data.sampled %>% group_by(codposs) %>% summarize(num = n(), total_expo = sum(duree))
-#belgium_shape_sf= left_join(belgium_shape_sf,post_expo,by= c("POSTCODE"="codposs"))
-
-
-
-#gam.model=gam(nbrtotc~s(ageph, sp=1.2,k=5, bs="cr"),family=poisson, data1)       #Manually k,bs
-#gam.model1=gam(nbrtotc~s(ageph), method="REML",family=poisson, data1)    #Using REML
-#print(gam.model1)
-
 
 model.gam= gam(nbrtotc~s(ageph)+s(long,lat,bs="tp")+agecar+sexp+fuelc+
               split+fleetc+usec+fleetc+sportc+coverp+powerc,
@@ -189,15 +179,6 @@ glm.geo=glm(nbrtotc~offset(log(duree))+ageph+agecar+
                  sexp+fuelc+split+fleetc+usec+sportc+coverp+
                  powerc+ageph:sexp, train1, family = poisson (link="log")) 
 summary(glm.geo)
-# ggplot(belgium_shape_sf)+geom_sf(aes(fill="fit_spatial"), color=NA)+scale_fill_gradient(low="#99CCFF",high= "#003366")+theme_bw()
-# tm_shape(belgium_shape_sf) +
-#   tm_borders(col = 'white', lwd = .1) +
-#   tm_fill("fit_spatial", style = "cont",
-#           palette = "RdBu", legend.reverse = TRUE,
-#           auto.palette.mapping = TRUE) +
-#   tm_layout(legend.title.size = 1.0,
-#             legend.text.size = 1.0)
-
 
 ggplot(belgium_shape_sf) +
   geom_sf(aes(fill = s.long.lat.), colour = NA) +
