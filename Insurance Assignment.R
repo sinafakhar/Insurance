@@ -10,6 +10,8 @@ library(gbm)
 library(caret)
 library(ggplot2)
 library(ggpubr)
+library(rpart)
+
 KULbg = "#116E8A" 
 
 data= read.table("https://raw.githubusercontent.com/sinafakhar/Insurance/master/data.csv",sep=",",header=T)
@@ -280,7 +282,6 @@ sum(predict222)/losses
 sum(predict333)/losses     
 
 ###### rpart for regression tree #####################################
-library(rpart)
 
 tmodel <- rpart(nbrtotc ~ sexp + ageph + coverp + sportc+powerc+fuelc+agecar+split+fleetc+usec+long+lat, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 5))
 summary(tmodel)
@@ -309,19 +310,19 @@ plot(tree_opt)
 
 
 
-tmodel_spatial <- rpart(nbrtotc ~ long+ lat, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 10))
+tmodel_spatial <- rpart(nbrtotc ~ long+ lat, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 5))
 
-post_dt = st_centroid(belgium_shape_sf)
-post_dt$long= do.call(rbind, post_dt$geometry)[,1]
-post_dt$lat= do.call(rbind, post_dt$geometry)[,2]
+post_dt1 = st_centroid(belgium_shape_sf)
+post_dt1$long= do.call(rbind, post_dt1$geometry)[,1]
+post_dt1$lat= do.call(rbind, post_dt1$geometry)[,2]
 
-pred=predict(tmodel_spatial, newdata = post_dt)
-dt_pred=data.frame(pc=post_dt$POSTCODE,long=post_dt$long, lat=post_dt$lat, pred)
-names(dt_pred)[4] = "fit_spatial"
+pred1=predict(tmodel_spatial, newdata = post_dt1)
+dt_pred1=data.frame(pc=post_dt1$POSTCODE,long=post_dt1$long, lat=post_dt1$lat, pred1)
+names(dt_pred1)[4] = "fit_spatial"
 
-belgium_shape_sf= left_join(belgium_shape_sf, dt_pred, by=c("POSTCODE"="pc"))
+belgium_shape_sf1= left_join(belgium_shape_sf, dt_pred1, by=c("POSTCODE"="pc"))
 
-ggplot(belgium_shape_sf) +
+ggplot(belgium_shape_sf1) +
   geom_sf(aes(fill = fit_spatial), colour = NA) +
   scale_fill_gradient(low = "#99CCFF",
                       high = "#003366") +theme_bw()
