@@ -109,28 +109,14 @@ summary(model1)
 
 ####################### GAM MODEL ###########################################
  
-set.seed(123)
-data.sampled= data1[sample(1:nrow(data1),100, replace=FALSE),]
-
 #belgium_shape_sf <- st_read(file.choose(), quiet = TRUE)
 belgium_shape_sf <- st_transform(belgium_shape_sf, CRS("+proj=longlat +datum=WGS84"))
 belgium_shape_sf= st_simplify(belgium_shape_sf,dTolerance = 0.00001)
 class(belgium_shape_sf)
 dim(belgium_shape_sf)
 
-
-ggplot(belgium_shape_sf) +
-  geom_sf() +
-  ggtitle("Welcome to Belgium!") +
-  theme_bw()
-  
 simple_shp = st_simplify(belgium_shape_sf, dTolerance = 0.00001)
 qtm(simple_shp)
-
-tm_shape(simple_shp) +
-  tm_borders(col = KULbg, lwd = 0.5) +
-  tm_layout(main.title = 'Welcome to Belgium!',
-            legend.outside = TRUE, frame = FALSE)
 
 model.gam= gam(nbrtotc~s(ageph)+s(long,lat,bs="tp")+agecar+sexp+fuelc+
               split+fleetc+usec+fleetc+sportc+coverp+powerc,
