@@ -83,9 +83,9 @@ ggplot(train, aes(x = sportc, y = nbrtotc))+
    labs(y = "Coverage") +
    ggtitle("Type of coverage")
  
-  ######################## GLM MODEL ############################################
+######################## GLM MODEL ############################################
 ########## Frequency###################
-#We yet didn't add geo info to this model we need to do the binning and then add
+#We yet didn't add long and lat to this model we need to do the binning and then add
 glm.model1=glm(nbrtotc~ offset(log(duree))+ageph+codposs+agecar+sexp+fuelc+split+
                  fleetc+usec+sportc+coverp+powerc+ageph:sexp,train, 
                family = poisson(link="log"))   #Try GLM family model
@@ -295,39 +295,40 @@ sum(predict333)/losses
 
 ###### rpart for regression tree #####################################
 library(rpart)
-tree_cp_1 <- rpart(nbrtotc ~ sexp + ageph + coverp + sportc+powerc+fuelc+agecar+split+fleetc+usec, data = train, method = "poisson", control = rpart.control(cp = 1, maxdepth = 5))
-tree_cp_1
-summary(tree_cp_1)
-sum(train$nbrtotc)
-sum(train$nbrtotc)/130925
-tree_cp_0 <- rpart(nbrtotc ~ sexp + ageph + coverp + sportc+powerc+fuelc+agecar+split+fleetc+usec, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 10))
-summary(tree_cp_0)
-tree_cp_0$variable.importance
+
+tmodel <- rpart(nbrtotc ~ sexp + ageph + coverp + sportc+powerc+fuelc+agecar+split+fleetc+usec+long+lat, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 10))
+summary(tmodel)
+tmodel$variable.importance
 library(partykit)
-tree_cp_0_party <- as.party(tree_cp_0)
-plot(tree_cp_0_party)
-printcp(tree_cp_0)
-plotcp(tree_cp_0)
-c_opt <- tree_cp_0$cptable[which.min(tree_cp_0$cptable[,"xerror"]),"CP"]
+tmodel.party <- as.party(tmodel)
+plot(tmodel.party)
+printcp(tmodel)
+plotcp(tmodel)
+c_opt <- tmodel$cptable[which.min(tmodel$cptable[,"xerror"]),"CP"]
 c_opt
-tree_opt <- prune(tree_cp_0, cp = c_opt)
+tree_opt <- prune(tmodel, cp = c_opt)
 tree_opt <- as.party(tree_opt)
 plot(tree_opt)
 
-lambda_hat <- predict(tree_opt) 
-train$lambda_hat <- lambda_hat
-class <- partykit:::.list.rules.party(tree_opt)
-train$class <- class[as.character(predict(tree_opt, type = "node"))]
-head(train)
-s <- subset(train, select = c(lambda_hat, class))
-
-s <- unique(s)
-
-s[order(s$lambda_hat), ]
+# lambda_hat <- predict(tree_opt) 
+# train1$lambda_hat <- lambda_hat
+# class <- partykit:::.list.rules.party(tree_opt)
+# train1$class <- class[as.character(predict(tree_opt, type = "node"))]
+# head(train)
+# s <- subset(train1, select = c(lambda_hat, class))
+# 
+# s <- unique(s)
+# 
+# s[order(s$lambda_hat), ]
 
 
 
 freq_gam_spatial <- rpart(nbrtotc ~ long+ lat, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 10))
+
+post_dt = st_centroid(belgium_shape_sf)
+post_dt$long= do.call(rbind, post_dt$geometry)[,1]
+post_dt$lat= do.call(rbind, post_dt$geometry)[,2]
+
 
 pred=predict(freq_gam_spatial, newdata = post_dt)
 dt_pred=data.frame(pc=post_dt$POSTCODE,long=post_dt$long, lat=post_dt$lat, pred)
@@ -342,19 +343,9 @@ classint_fisher=classIntervals(dt_pred$fit_spatial,num_bins,style="fisher")
 classint_fisher$brks
 min(dt_pred$fit_spatial)
 max(dt_pred$fit_spatial)
-belg  ggtitle("claim frequency data") +
-ium_shape_sf$class_fisher=cut(belgium_shape_sf$fit_spatial,breaks = classint_fisher$brks,
+ggtitle("claim frequency data") +
+belgium_shape_sf$class_fisher=cut(belgium_shape_sf$fit_spatial,breaks = classint_fisher$brks,
                                   right = FALSE, include.lowest = TRUE,dig.lab = 2)
-
-
-
-mtpl_geo= train%>%dplyr::select(nbrtotc, duree, coverp, fuelc, ageph,codposs)
-mtpl_geo=left_join(mtpl_geo, dt_pred,by=c("codposs"="pc"))
-mtpl_geo$geo=as.factor(cut(mtpl_geo$fit_spatial,breaks = classint_fisher$brks, right = FALSE,
-                           include.lowest = TRUE, dig.lab = 2))
-head(mtpl_geo$geo)
-geomodel= gam(nbrtotc~ geo+coverp+fuelc+s(ageph), data=mtpl_geo, family = poisson(link="log"))
-summary(geomodel)
 
 ggplot(belgium_shape_sf) +
   geom_sf(aes(fill = fit_spatial), colour = NA) +
