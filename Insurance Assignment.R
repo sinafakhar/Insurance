@@ -138,9 +138,14 @@ pred=predict(freq_gam_spatial, newdata = post_dt, type="terms", terms="s(long,la
 dt_pred=data.frame(pc=post_dt$POSTCODE,long=post_dt$long, lat=post_dt$lat, pred)
 names(dt_pred)[4] = "fit_spatial"
 
-
-
 belgium_shape_sf= left_join(belgium_shape_sf, dt_pred, by=c("POSTCODE"="pc"))
+
+ggplot(belgium_shape_sf) +
+  geom_sf(aes(fill = fit_spatial), colour = NA) +
+  ggtitle("claim frequency data") +
+  scale_fill_gradient(low = "#99CCFF",
+                      high = "#003366") +theme_bw()
+##### Binning for GLM##################
 num_bins=5
 library(classInt)
 classint_fisher=classIntervals(dt_pred$fit_spatial,num_bins,style="fisher")
@@ -171,12 +176,7 @@ glm.geo=glm(nbrtotc~offset(log(duree))+ageph+agecar+
                  powerc+ageph:sexp, train1, family = poisson (link="log")) 
 summary(glm.geo)
 
-ggplot(belgium_shape_sf) +
-  geom_sf(aes(fill = s.long.lat.), colour = NA) +
-  ggtitle("claim frequency data") +
-  scale_fill_gradient(low = "#99CCFF",
-                      high = "#003366") +
-  theme_bw()
+
 
 
 #######################Gradient Boosting, Random Forest and GLM with CARET#################
