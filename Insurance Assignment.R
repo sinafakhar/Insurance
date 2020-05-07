@@ -11,6 +11,7 @@ library(caret)
 library(ggplot2)
 library(ggpubr)
 library(rpart)
+library (randomForest)
 
 KULbg = "#116E8A" 
 
@@ -39,7 +40,7 @@ sum(train$nbrtotc)
 
 #Since the original dataset is big for some models (Like ones in CARET) we used this minitrain and test 
 #to test and then replace with original one
-population= data2[sample(1:nrow(data2), 1000, replace=FALSE),]
+population= data2[sample(1:nrow(data2), 3000, replace=FALSE),]
 sample1= sample.int(n = nrow(data2), size = floor(.8*nrow(population)), replace = F)
 
 minitrain <- data2[sample1, ]
@@ -309,7 +310,7 @@ plot(tree_opt)
 # s[order(s$lambda_hat), ]
 
 
-
+###########Belgium shape###########################
 tmodel_spatial <- rpart(nbrtotc ~ long+ lat, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 5))
 
 post_dt1 = st_centroid(belgium_shape_sf)
@@ -326,3 +327,14 @@ ggplot(belgium_shape_sf1) +
   geom_sf(aes(fill = fit_spatial), colour = NA) +
   scale_fill_gradient(low = "#99CCFF",
                       high = "#003366") +theme_bw()
+
+###########Severity######################
+
+###########gbm ###############
+
+gbmmodel= gbm(nbrtotc ~ sexp+ ageph+fuelc+split+ usec+fleetc+
+                            sportc+coverp+powerc +long+lat,distribution="poisson",data = mydata)
+summary(gbmmodel)
+par(mfrow=c(1,2))
+plot(gbmmodel ,i="ageph")
+plot(gbmmodel ,i=" lat ")
