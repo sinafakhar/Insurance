@@ -343,12 +343,18 @@ ggplot(belgium_shape_sf1) +
 
 ###########Severity######################
 
-###########gbm ###############
+###########gbm frequency ###############
 
 gbmmodel= gbm(nbrtotc ~ sexp+ ageph+fuelc+split+ usec+fleetc+
                             sportc+coverp+powerc +long+lat,distribution="poisson",
               n.trees = 5000,data = train)
 summary(gbmmodel)
 par(mfrow=c(1,1))
-plot(gbmmodel ,i="ageph")
-plot(gbmmodel ,i="split")
+plot(gbmmodel ,i="ageph")     #Partial dependent plot for age
+plot(gbmmodel ,i="split")     #Partial dependent plot for split
+
+predictgbm=predict(gbmmodel, newdata=test, n.trees = 5000)
+mean(abs(test$nbrtotc-predictgbm))   #MAE for gbm is 2.26
+
+###########gbm severity ###############
+
