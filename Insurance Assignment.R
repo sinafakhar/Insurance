@@ -27,6 +27,21 @@ names(inspost)=tolower(colnames(inspost))                 #Making all the column
 data1=data %>% inner_join(inspost, by = "codposs")        #Joining lang and lat to data1
 data1=data1[,-c(17,18)]                                   #Removing commune and ins from data1
 
+data1$agecar=as.factor(data$agecar)                       #Turning to "factor" all "char" variables
+data1$sexp=as.factor(data$sexp)
+data1$agecar=as.factor(data$agecar)
+data1$fuelc=as.factor(data$fuelc)
+data1$split=as.factor(data$split)
+data1$usec=as.factor(data$usec)
+data1$fleetc=as.factor(data$fleetc)
+data1$sportc=as.factor(data$sportc)
+data1$coverp=as.factor(data$coverp)
+data1$powerc=as.factor(data$powerc)
+str(data1)
+
+
+
+
 which(data1$chargtot>1000000)                             #We have one very big severity which 
                                                            
 data2=data1[-11749,]                                      #Removing the outlier
@@ -101,7 +116,7 @@ summary(model1)
 data3=train%>% filter(nbrtotc>0)      #Keeping just positive number of claims (removing 0)
 glm.model2=glm(chargtot~offset(log(duree))+ageph+codposs+agecar+
                  sexp+fuelc+split+fleetc+usec+sportc+coverp+
-                 powerc+ageph:sexp, data3, family = Gamma (link="log"))  
+                 powerc, data3, family = Gamma (link="log"))  
 summary(glm.model2)
 
 
@@ -331,10 +346,11 @@ ggplot(belgium_shape_sf1) +
 ###########Severity######################
 
 ###########gbm ###############
-
+gbmmodel= randomForest(nbrtotc ~ sexp+ ageph+fuelc+split+ usec+fleetc+
+                sportc+coverp+powerc +long+lat,data = train)
 gbmmodel= gbm(nbrtotc ~ sexp+ ageph+fuelc+split+ usec+fleetc+
-                            sportc+coverp+powerc +long+lat,distribution="poisson",data = mydata)
+                            sportc+coverp+powerc +long+lat,distribution="poisson",data = train)
 summary(gbmmodel)
 par(mfrow=c(1,2))
-plot(gbmmodel ,i="ageph")
-plot(gbmmodel ,i=" lat ")
+plot(gbmmodel ,i="split")
+plot(gbmmodel ,i="lat")
