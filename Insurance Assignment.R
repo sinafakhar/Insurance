@@ -39,9 +39,6 @@ data1$coverp=as.factor(data$coverp)
 data1$powerc=as.factor(data$powerc)
 str(data1)
 
-
-
-
 which(data1$chargtot>1000000)                             #We have one very big severity which 
                                                            
 data2=data1[-11749,]                                      #Removing the outlier
@@ -326,6 +323,7 @@ plot(tree_opt)
 
 
 ###########Belgium shape###########################
+belgium_shape_sf=belgium_shape_sf[,-c(7,8,9)]
 tmodel_spatial <- rpart(nbrtotc ~ long+ lat, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 5))
 
 post_dt1 = st_centroid(belgium_shape_sf)
@@ -346,11 +344,11 @@ ggplot(belgium_shape_sf1) +
 ###########Severity######################
 
 ###########gbm ###############
-gbmmodel= randomForest(nbrtotc ~ sexp+ ageph+fuelc+split+ usec+fleetc+
-                sportc+coverp+powerc +long+lat,data = train)
+
 gbmmodel= gbm(nbrtotc ~ sexp+ ageph+fuelc+split+ usec+fleetc+
-                            sportc+coverp+powerc +long+lat,distribution="poisson",data = train)
+                            sportc+coverp+powerc +long+lat,distribution="poisson",
+              n.trees = 5000,data = train)
 summary(gbmmodel)
-par(mfrow=c(1,2))
+par(mfrow=c(1,1))
+plot(gbmmodel ,i="ageph")
 plot(gbmmodel ,i="split")
-plot(gbmmodel ,i="lat")
