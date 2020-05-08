@@ -6,12 +6,12 @@ library(mgcv)
 library(sf)
 library(sp)
 library(tmap)
-library(gbm)
 library(caret)
 library(ggplot2)
 library(ggpubr)
 library(rpart)
 library (randomForest)
+library(dplyr)
 
 KULbg = "#116E8A" 
 
@@ -344,23 +344,21 @@ ggplot(belgium_shape_sf1) +
 ###########Severity######################
 
 ###########gbm frequency ###############
-# library("devtools")
-# install_github("gbm-developers/gbm3")
-devtools::install_github("gbm-developers/gbm")
+
+devtools::install_github('harrysouthworth/gbm')
 library(gbm)
 set.seed(123)
-features=train%>% select(nbrtotc,ageph,sexp,fuelc,split,usec,fleetc,
-                           sportc,coverp,powerc ,long,lat)
+features=train%>% dplyr::select(nbrtotc,ageph,sexp,fuelc,split,usec,fleetc,
+                           sportc,coverp,powerc,long,lat)
 gbmmodel= gbm(nbrtotc ~ ageph+sexp+fuelc+split+ usec+fleetc+
                 sportc+coverp+powerc +long+lat,distribution="poisson",
-              var.monotone = c(0,0,0,0,0,0,0,0,0,0,0),cv.folds = 10,
-              n.trees = 200,data = features,interaction.depth = 3,
+              var.monotone = c(0,0,0,0,0,0,0,0,0,0,0),cv.folds = 3,
+              n.trees = 10000,data = features,interaction.depth = 1,
               bag.fraction=0.5,train.fraction = 0.5, n.cores=5)
+
 summary(gbmmodel)
 plot(gbmmodel$train.error,type="l")
-pretty.gbm.tree(gbmmodel, i.tree=200)
-predictgbm=predict(gbmmodel, newdata=test, n.trees = 5000)
-mean(abs(test$nbrtotc-predictgbm))   #MAE for gbm is 2.26
+
 best.iter.oob <- gbm.perf(gbmmodel, method = "OOB")
 print(best.iter.oob)
 best.iter.test <- gbm.perf(gbmmodel, method = "test")
@@ -369,15 +367,29 @@ best.iter.cv <- gbm.perf(gbmmodel, method = "cv")
 print(best.iter.cv)
 
 summary(gbmmodel, n.trees = best.iter.cv)
-
+gbmpredict <- predict(gbmmodel, test, n.trees = best.iter.cv, type = 'response')
+mean(abs(test$nbrtotc-gbmpredict))   #MAE for gbm frequency is 0.217
 ###########gbm severity ###############
-gbmmodel= gbm(chargtot ~ sexp+ ageph+fuelc+split+ usec+fleetc+
-                sportc+coverp+powerc +long+lat,distribution="gamma",
-              n.trees = 5000,data = train)
-summary(gbmmodel)
-par(mfrow=c(1,1))
-plot(gbmmodel ,i="ageph")     #Partial dependent plot for age
-plot(gbmmodel ,i="split")     #Partial dependent plot for split
 
-predictgbm=predict(gbmmodel, newdata=test, n.trees = 5000)
-mean(abs(test$nbrtotc-predictgbm))   #MAE for gbm is 2.26
+set.seed(123)
+features=train%>% select(chargtot,ageph,sexp,fuelc,split,usec,fleetc,
+                         sportc,coverp,powerc,long,lat)
+gbmmodel= gbm(chargtot ~ ageph+sexp+fuelc+split+ usec+fleetc+
+                sportc+coverp+powerc +long+lat,distribution="gamma",
+              var.monotone = c(0,0,0,0,0,0,0,0,0,0,0),cv.folds = 10,
+              n.trees = 200,data = features,interaction.depth = 3,
+              bag.fraction=0.5,train.fraction = 0.5, n.cores=5)
+
+summary(gbmmodel)
+plot(gbmmodel$train.error,type="l")
+
+best.iter.oob <- gbm.perf(gbmmodel, method = "OOB")
+print(best.iter.oob)
+best.iter.test <- gbm.perf(gbmmodel, method = "test")
+print(best.iter.test)
+best.iter.cv <- gbm.perf(gbmmodel, method = "cv")
+print(best.iter.cv)
+
+summary(gbmmodel, n.trees = best.iter.cv)
+gbmpredict <- predict(gbmmodel, test, n.trees = best.iter.cv, type = 'response')
+mean(abs(test$nbrtotc-gbmpredict))   #MAE for gbm frequency is 0.217
