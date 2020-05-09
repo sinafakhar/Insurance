@@ -9,9 +9,9 @@ library(tmap)
 library(caret)
 library(ggplot2)
 library(ggpubr)
-library(rpart)
 library (randomForest)
 library(dplyr)
+library(gbm)
 
 KULbg = "#116E8A" 
 
@@ -23,9 +23,11 @@ inpost=read.table("https://raw.githubusercontent.com/sinafakhar/Insurance/master
 #DataExplorer::create_report(data)                        #Exploring all the data at a glance
 names(data)=tolower(colnames(data))                       #Making all the column names lower
 names(inspost)=tolower(colnames(inspost))                 #Making all the column names lower
+data$average=ifelse(data$chargtot/data$nbrtotc=="NaN",
+                    0,data$chargtot/data$nbrtotc)         #Adding averge severity for severity models
 
 data1=data %>% inner_join(inspost, by = "codposs")        #Joining lang and lat to data1
-data1=data1[,-c(17,18)]                                   #Removing commune and ins from data1
+data1=data1[,-c(18,19)]                                   #Removing commune and ins from data1
 
 data1$agecar=as.factor(data$agecar)                       #Turning to "factor" all "char" variables
 data1$sexp=as.factor(data$sexp)
@@ -39,10 +41,10 @@ data1$coverp=as.factor(data$coverp)
 data1$powerc=as.factor(data$powerc)
 str(data1)
 
-which(data1$chargtot>1000000)                             #We have one very big severity which 
+data2=data1[-which(data1$chargtot>100000),]                           #We have one very big severity which 
                                                            
-data2=data1[-11749,]                                      #Removing the outlier
-sample <- sample.int(n = nrow(data2), size = floor(.8*nrow(data1)), replace = F)   #Creating train an test sets
+#data2=data1[-11749,]                                      #Removing the outlier
+sample <- sample.int(n = nrow(data2), size = floor(.8*nrow(data2)), replace = F)   #Creating train an test sets
 train <- data2[sample, ]
 test  <- data2[-sample, ]
 mean(test$chargtot)                                       #Making sure the train and test set are representative 
@@ -50,14 +52,8 @@ mean(train$chargtot)
 sum(test$nbrtotc)*4
 sum(train$nbrtotc)
 
-#Since the original dataset is big for some models (Like ones in CARET) we used this minitrain and test 
-#to test and then replace with original one
-population= data2[sample(1:nrow(data2), 3000, replace=FALSE),]
-sample1= sample.int(n = nrow(data2), size = floor(.8*nrow(population)), replace = F)
-
-minitrain <- data2[sample1, ]
-minitest  <- data2[-sample1, ]
-
+train.severity=train%>% filter(nbrtotc>0)      #Keeping just positive number of claims (removing 0) for severity models
+test.severity=test%>%filter(nbrtotc>0)
 
 ####################### EXPLORATION ##################################################
 #We need to some more insightful visualtizations like below
@@ -294,9 +290,17 @@ sum(predict111)/losses
 sum(predict222)/losses
 sum(predict333)/losses     
 
-###### rpart for regression tree #####################################
+######regression tree Frequency#####################################
+#devtools::install_github('henckr/distRforest')
+library(distRforest)
 
-tmodel <- rpart(nbrtotc ~ sexp + ageph + coverp + sportc+powerc+fuelc+agecar+split+fleetc+usec+long+lat, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 5))
+
+
+tmodel <- distRforest::rpart(nbrtotan~ sexp + ageph + coverp +
+                               sportc+powerc+fuelc+agecar+split+
+                               fleetc+usec+long+lat, data = train,
+                             method = "poisson", 
+                             control = rpart.control(cp=0.0001, maxdepth = 5))
 summary(tmodel)
 tmodel$variable.importance
 library(partykit)
@@ -310,16 +314,8 @@ tree_opt <- prune(tmodel, cp = c_opt)
 tree_opt <- as.party(tree_opt)
 plot(tree_opt)
 
-# lambda_hat <- predict(tree_opt) 
-# train1$lambda_hat <- lambda_hat
-# class <- partykit:::.list.rules.party(tree_opt)
-# train1$class <- class[as.character(predict(tree_opt, type = "node"))]
-# head(train)
-# s <- subset(train1, select = c(lambda_hat, class))
-# 
-# s <- unique(s)
-# 
-# s[order(s$lambda_hat), ]
+ treepredict <- predict(tree_opt) 
+
 
 
 ###########Belgium shape###########################
@@ -345,12 +341,12 @@ ggplot(belgium_shape_sf1) +
 
 ###########gbm frequency ###############
 
-devtools::install_github('harrysouthworth/gbm')
-library(gbm)
+#devtools::install_github('harrysouthworth/gbm')
+
 set.seed(123)
-features=train%>% dplyr::select(nbrtotc,ageph,sexp,fuelc,split,usec,fleetc,
+features=train%>% dplyr::select(duree,nbrtotc,ageph,sexp,fuelc,split,usec,fleetc,
                            sportc,coverp,powerc,long,lat)
-gbmmodel= gbm(nbrtotc ~ ageph+sexp+fuelc+split+ usec+fleetc+
+gbmmodel= gbm(nbrtotc ~ offset(log(duree))+ageph+sexp+fuelc+split+ usec+fleetc+
                 sportc+coverp+powerc +long+lat,distribution="poisson",
               var.monotone = c(0,0,0,0,0,0,0,0,0,0,0),cv.folds = 3,
               n.trees = 10000,data = features,interaction.depth = 1,
@@ -359,37 +355,31 @@ gbmmodel= gbm(nbrtotc ~ ageph+sexp+fuelc+split+ usec+fleetc+
 summary(gbmmodel)
 plot(gbmmodel$train.error,type="l")
 
-best.iter.oob <- gbm.perf(gbmmodel, method = "OOB")
-print(best.iter.oob)
-best.iter.test <- gbm.perf(gbmmodel, method = "test")
-print(best.iter.test)
 best.iter.cv <- gbm.perf(gbmmodel, method = "cv")
 print(best.iter.cv)
 
 summary(gbmmodel, n.trees = best.iter.cv)
 gbmpredict <- predict(gbmmodel, test, n.trees = best.iter.cv, type = 'response')
-mean(abs(test$nbrtotc-gbmpredict))   #MAE for gbm frequency is 0.217
+mean(abs(test$nbrtotc-gbmpredict))   #MAE for gbm frequency is 0.218
 ###########gbm severity ###############
 
 set.seed(123)
-features=train%>% select(chargtot,ageph,sexp,fuelc,split,usec,fleetc,
+features=train.severity%>% dplyr::select(duree,nbrtotc,average,ageph,sexp,fuelc,split,usec,fleetc,
                          sportc,coverp,powerc,long,lat)
-gbmmodel= gbm(chargtot ~ ageph+sexp+fuelc+split+ usec+fleetc+
+gbmmodel= gbm(average ~ offset(log(duree))+ageph+sexp+fuelc+split+ usec+fleetc+
                 sportc+coverp+powerc +long+lat,distribution="gamma",
               var.monotone = c(0,0,0,0,0,0,0,0,0,0,0),cv.folds = 10,
-              n.trees = 200,data = features,interaction.depth = 3,
-              bag.fraction=0.5,train.fraction = 0.5, n.cores=5)
+              n.trees = 10000,data = features,interaction.depth = 1,
+              bag.fraction=0.5,train.fraction = 0.5,
+              n.minobsinnode = 0.01 * 0.75 * nrow(train),weights = nbrtotc, n.cores=5)
 
 summary(gbmmodel)
 plot(gbmmodel$train.error,type="l")
 
-best.iter.oob <- gbm.perf(gbmmodel, method = "OOB")
-print(best.iter.oob)
-best.iter.test <- gbm.perf(gbmmodel, method = "test")
-print(best.iter.test)
 best.iter.cv <- gbm.perf(gbmmodel, method = "cv")
 print(best.iter.cv)
 
+
 summary(gbmmodel, n.trees = best.iter.cv)
 gbmpredict <- predict(gbmmodel, test, n.trees = best.iter.cv, type = 'response')
-mean(abs(test$nbrtotc-gbmpredict))   #MAE for gbm frequency is 0.217
+mean(abs(test$average-gbmpredict))   #MAE for gbm frequency is 343.23
