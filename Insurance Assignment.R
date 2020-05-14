@@ -25,7 +25,7 @@ names(data)=tolower(colnames(data))                       #Making all the column
 names(inspost)=tolower(colnames(inspost))                 #Making all the column names lower
 data$average=ifelse(data$chargtot/data$nbrtotc=="NaN",
                     0,data$chargtot/data$nbrtotc)         #Adding averge severity for severity models
-
+data$avgclaim=data$nbrtotc/data$duree
 data1=data %>% inner_join(inspost, by = "codposs")        #Joining lang and lat to data1
 data1=data1[,-c(18,19)]                                   #Removing commune and ins from data1
 
@@ -299,7 +299,6 @@ tmodel <- distRforest::rpart(nbrtotan~ sexp + ageph + coverp +
                              method = "poisson", 
                              control = rpart.control(cp=0.0001, maxdepth = 5))
 summary(tmodel)
-tmodel$variable.importance
 tmodel.party <- as.party(tmodel)
 plot(tmodel.party)
 printcp(tmodel)
@@ -309,6 +308,8 @@ c_opt
 tree_opt <- prune(tmodel, cp = c_opt)
 tree_opt <- as.party(tree_opt)
 plot(tree_opt)
+tmodel$variable.importance
+
 
  treepredict.f <- predict(tree_opt) 
 
