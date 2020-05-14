@@ -46,10 +46,7 @@ data2=data1[-which(data1$chargtot>100000),]                           #We have o
 sample <- sample.int(n = nrow(data2), size = floor(.8*nrow(data2)), replace = F)   #Creating train an test sets
 train <- data2[sample, ]
 test  <- data2[-sample, ]
-mean(test$chargtot)                                       #Making sure the train and test set are representative 
-mean(train$chargtot)
-sum(test$nbrtotc)*4
-sum(train$nbrtotc)
+
 
 train.severity=train%>% filter(nbrtotc>0)      #Keeping just positive number of claims (removing 0) for severity models
 test.severity=test%>%filter(nbrtotc>0)
