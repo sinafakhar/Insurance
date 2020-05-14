@@ -338,7 +338,8 @@ ggplot(belgium_shape_sf1) +
 tmodel <- distRforest::rpart(average~ sexp + ageph + coverp +
                                sportc+powerc+fuelc+agecar+split+
                                fleetc+usec+long+lat, data = train.severity,
-                             weights=nbrtotc,method="gamma", 
+                             weights=nbrtotc,method="gamma",
+                             parms = list(shrink = 0.125),
                              control = rpart.control(cp=0.001, maxdepth = 5,
                                                      xval = 0))
 summary(tmodel)
