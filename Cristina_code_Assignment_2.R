@@ -17,11 +17,12 @@ library (randomForest)
 library(sf)
 library(sp)
 library(tmap)
-
 #Read data####
-setwd("/Users/cristina/Dropbox/Data science for non life insurance/Project")
-cars<-fread('Assignment2.csv')
-postcodes<-fread("inspost.csv")
+cars<-fread('https://raw.githubusercontent.com/sinafakhar/Insurance/master/data.csv')
+postcodes<-fread("https://raw.githubusercontent.com/sinafakhar/Insurance/master/inspost.csv")
+# setwd("/Users/cristina/Dropbox/Data science for non life insurance/Project")
+# cars<-fread('Assignment2.csv')
+# postcodes<-fread("inspost.csv")
 
 
 
@@ -33,7 +34,7 @@ names(postcodes)=tolower(colnames(postcodes))
 
 
 #Explore
-DataExplorer::create_report(cars)
+#DataExplorer::create_report(cars)
 cars[chargtot != 0 , plot(table(chargtot))]
 cars[duree != 1 , plot(table(duree))]
 
@@ -78,7 +79,7 @@ cars[,powerc:=as.factor(powerc)]
 fit1<- gam( nbrtotc  ~ s(codposs) + s(ageph) + agecar + sexp + 
              fuelc + usec + fleetc + split + sportc + coverp + powerc,
            offset = lnexpo, 
-           data = train, 
+           data = cars, 
            family = poisson(link = "log")) 
 summary(fit1)
 
