@@ -1,4 +1,3 @@
-
 library(tidyverse)
 library(DataExplorer)
 library(MASS)
@@ -9,14 +8,15 @@ library(tmap)
 library(caret)
 library(ggplot2)
 library(ggpubr)
+library(rpart)
 library (randomForest)
+library(plyr)
 library(dplyr)
-library(gbm)
 
 KULbg = "#116E8A" 
 
 data= read.table("https://raw.githubusercontent.com/sinafakhar/Insurance/master/data.csv",sep=",",header=T)
-inpost=read.table("https://raw.githubusercontent.com/sinafakhar/Insurance/master/inspost.csv", sep=",", header=T)
+inpost=read.table("https://raw.githubusercontent.com/sinafakhar/Insurance/master/inspost.csv", sep=",",quote = "", header=T)
 
 ######################## PREPROCESSING DATASETS #######################################
 
