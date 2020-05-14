@@ -31,7 +31,6 @@ data1=data1[,-c(18,19)]                                   #Removing commune and 
 
 data1$agecar=as.factor(data$agecar)                       #Turning to "factor" all "char" variables
 data1$sexp=as.factor(data$sexp)
-data1$agecar=as.factor(data$agecar)
 data1$fuelc=as.factor(data$fuelc)
 data1$split=as.factor(data$split)
 data1$usec=as.factor(data$usec)
