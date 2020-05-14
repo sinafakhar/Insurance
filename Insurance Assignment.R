@@ -289,6 +289,7 @@ sum(predict333)/losses
 ######regression tree Frequency#####################################
 #devtools::install_github('henckr/distRforest')
 library(distRforest)
+library(partykit)
 
 
 
@@ -299,7 +300,6 @@ tmodel <- distRforest::rpart(nbrtotan~ sexp + ageph + coverp +
                              control = rpart.control(cp=0.0001, maxdepth = 5))
 summary(tmodel)
 tmodel$variable.importance
-library(partykit)
 tmodel.party <- as.party(tmodel)
 plot(tmodel.party)
 printcp(tmodel)
@@ -334,7 +334,7 @@ ggplot(belgium_shape_sf1) +
                       high = "#003366") +theme_bw()
 
 ###########Severity######################
-tmodel <- distRforest::rpart(chargtot~ sexp + ageph + coverp +
+tmodel <- distRforest::rpart(average~ sexp + ageph + coverp +
                                sportc+powerc+fuelc+agecar+split+
                                fleetc+usec+long+lat, data = train.severity,
                              weights=nbrtotc,method="gamma", 
