@@ -16,7 +16,7 @@ library(dplyr)
 KULbg = "#116E8A" 
 
 data= read.table("https://raw.githubusercontent.com/sinafakhar/Insurance/master/data.csv",sep=",",header=T)
-inpost=read.table("https://raw.githubusercontent.com/sinafakhar/Insurance/master/inspost.csv", sep=",",quote = "", header=T)
+inspost=read.table("https://raw.githubusercontent.com/sinafakhar/Insurance/master/inspost.csv", sep=",",quote = "", header=T)
 
 ######################## PREPROCESSING DATASETS #######################################
 
