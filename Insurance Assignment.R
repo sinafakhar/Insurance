@@ -312,7 +312,8 @@ plot(tree_opt)
 
  treepredict <- predict(tree_opt) 
 
-
+ mean(abs(test$nbrtotc-treepredict))   #MAE for regession tree (frequency) is 0.247
+ 
 
 ###########Belgium shape###########################
 belgium_shape_sf=belgium_shape_sf[,-c(7,8,9)]
@@ -347,6 +348,8 @@ plot(tmodel.party)
 printcp(tmodel)
 
 treepredict <- predict(tmodel) 
+mean(abs(test.severity$average-treepredict))   #MAE for gbm frequency is 0.218
+
 ###########gbm frequency ###############
 
 #devtools::install_github('harrysouthworth/gbm')
