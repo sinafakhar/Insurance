@@ -27,7 +27,7 @@ data$average=ifelse(data$chargtot/data$nbrtotc=="NaN",
                     0,data$chargtot/data$nbrtotc)         #Adding averge severity for severity models
 data$avgclaim=data$nbrtotc/data$duree
 data1=data %>% inner_join(inspost, by = "codposs")        #Joining lang and lat to data1
-data1=data1[,-c(18,19)]                                   #Removing commune and ins from data1
+data1=data1[,-c(19,20)]                                   #Removing commune and ins from data1
 
 data1$agecar=as.factor(data$agecar)                       #Turning to "factor" all "char" variables
 data1$sexp=as.factor(data$sexp)
@@ -293,7 +293,7 @@ library(partykit)
 
 
 
-tmodel <- distRforest::rpart(nbrtotan~ sexp + ageph + coverp +
+tmodel <- distRforest::rpart(avgclaim~ sexp + ageph + coverp +
                                sportc+powerc+fuelc+agecar+split+
                                fleetc+usec+long+lat, data = train,
                              method = "poisson", 
@@ -318,7 +318,7 @@ tmodel$variable.importance
 
 ###########Belgium shape###########################
 belgium_shape_sf=belgium_shape_sf[,-c(7,8,9)]
-tmodel_spatial <- rpart(nbrtotc ~ long+ lat, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 5))
+tmodel_spatial <- rpart(avgclaim ~ long+ lat, data = train, method = "poisson", control = rpart.control(cp=0.0001, maxdepth = 5))
 
 post_dt1 = st_centroid(belgium_shape_sf)
 post_dt1$long= do.call(rbind, post_dt1$geometry)[,1]
