@@ -310,9 +310,9 @@ tree_opt <- prune(tmodel, cp = c_opt)
 tree_opt <- as.party(tree_opt)
 plot(tree_opt)
 
- treepredict <- predict(tree_opt) 
+ treepredict.f <- predict(tree_opt) 
 
- mean(abs(test$nbrtotc-treepredict))   #MAE for regession tree (frequency) is 0.247
+ mean(abs(test$nbrtotc-treepredict.f))   #MAE for regession tree (frequency) is 0.247
  
 
 ###########Belgium shape###########################
@@ -347,8 +347,9 @@ tmodel.party <- as.party(tmodel)
 plot(tmodel.party)
 printcp(tmodel)
 
-treepredict <- predict(tmodel) 
-mean(abs(test.severity$average-treepredict))   #MAE for gbm frequency is 0.218
+treepredict.s <- predict(tmodel, test.severity ) 
+
+mean(abs(test.severity$average-treepredict.s))   #MAE for gbm frequency is 0.218
 
 ###########gbm frequency ###############
 
