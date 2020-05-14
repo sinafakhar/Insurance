@@ -337,7 +337,19 @@ ggplot(belgium_shape_sf1) +
                       high = "#003366") +theme_bw()
 
 ###########Severity######################
+tmodel <- distRforest::rpart(chargtot~ sexp + ageph + coverp +
+                               sportc+powerc+fuelc+agecar+split+
+                               fleetc+usec+long+lat, data = train.severity,
+                             weights=nbrtotc,method="gamma", 
+                             control = rpart.control(cp=0.0001, maxdepth = 5,
+                                                     xval = 0))
+summary(tmodel)
+tmodel$variable.importance
+tmodel.party <- as.party(tmodel)
+plot(tmodel.party)
+printcp(tmodel)
 
+treepredict <- predict(tmodel) 
 ###########gbm frequency ###############
 
 #devtools::install_github('harrysouthworth/gbm')
