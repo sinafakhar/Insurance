@@ -339,7 +339,7 @@ tmodel <- distRforest::rpart(average~ sexp + ageph + coverp +
                                sportc+powerc+fuelc+agecar+split+
                                fleetc+usec+long+lat, data = train.severity,
                              weights=nbrtotc,method="gamma", 
-                             control = rpart.control(cp=0.0001, maxdepth = 5,
+                             control = rpart.control(cp=0.001, maxdepth = 5,
                                                      xval = 0))
 summary(tmodel)
 tmodel$variable.importance
@@ -350,6 +350,7 @@ printcp(tmodel)
 treepredict.s <- predict(tmodel, test.severity ) 
 
 mean(abs(test.severity$average-treepredict.s))   #MAE for gbm frequency is 0.218
+
 
 ###########gbm frequency ###############
 
