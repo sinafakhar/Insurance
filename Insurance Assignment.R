@@ -104,7 +104,7 @@ summary(model1)
 
 ########## Severity#################
 data3=train%>% filter(nbrtotc>0)      #Keeping just positive number of claims (removing 0)
-glm.model2=glm(chargtot~offset(log(duree))+ageph+codposs+agecar+
+glm.model2=glm(average~ageph+codposs+agecar+
                  sexp+fuelc+split+fleetc+usec+sportc+coverp+
                  powerc, data3, family = Gamma (link="log"))  
 summary(glm.model2)
