@@ -294,7 +294,7 @@ library(partykit)
 
 
 
-tmodel <- distRforest::rpart(nbrtotan~ sexp + ageph + coverp +
+tmodel <- distRforest::rpart(cbind(duree,nbrtotc)~ sexp + ageph + coverp +
                                sportc+powerc+fuelc+agecar+split+
                                fleetc+usec+long+lat, data = train,
                              method = "poisson", 
