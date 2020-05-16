@@ -126,6 +126,7 @@ dim(belgium_shape_sf)
 simple_shp = st_simplify(belgium_shape_sf, dTolerance = 0.00001)
 qtm(simple_shp)
 
+#### Frequency GAM #####
 model.gam= gam(nbrtotc~s(ageph)+s(long,lat,bs="tp")+agecar+sexp+fuelc+
               split+fleetc+usec+fleetc+sportc+coverp+powerc,
             offset=log(duree), method= "REML", family=poisson, train)
@@ -153,6 +154,22 @@ ggplot(belgium_shape_sf) +
   ggtitle("claim frequency data") +
   scale_fill_gradient(low = "#99CCFF",
                       high = "#003366") +theme_bw()
+
+
+#### Severity GAM #####
+model.gam.2= gam(average~s(long,lat,bs="tp")+agecar+coverp,
+               method= "REML", family=Gamma, data3)
+summary(model.gam.2)
+
+AIC(model.gam.2)#189787
+BIC(model.gam.2)#189976.4
+
+
+model.gam.2$sp
+plot(model.gam.2, pages=1, scheme=0)
+plot(model.gam.2, pages=1, scheme=1)
+
+
 ##### Binning for GLM##################
 num_bins=5
 library(classInt)
